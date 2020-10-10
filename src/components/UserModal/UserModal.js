@@ -16,6 +16,8 @@ const UserModal = ({ user, jobs, close, users, dispatch, actionType }) => {
             jobId: newJobId,
             name: newName
         };
+    
+ 
 
         axios.put(`https://5f518d325e98480016123ada.mockapi.io/api/v1/users/${newUser.id}`, newUser)// newUser es lo que subimos a la api
             .then(res => {

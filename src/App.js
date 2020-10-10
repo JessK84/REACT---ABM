@@ -9,36 +9,16 @@ import Table2 from "./components/Table2/Table2";
 import ContentContainer from "./components/ContentContainer/ContentContainer";
 import axios from 'axios';
 /* import Modal from './components/Modal/Modal';
- */import UserModal from './components/UserModal/UserModal';
+ */
+import UserModal from './components/UserModal/UserModal';
+import { reducer, INIT, ADD, ELIMINAR, EDIT } from './components/Reducers/ReducersUsers';
+import { jobReducer, INIT_JOB, ELIMINAR_JOB, EDIT_JOB } from './components/Reducers/ReducersJobs';
 
-const INIT = "Inicializar"
-const ADD = "Agregar";
-const EDIT = "EDITAR";
-
-const reducer = (state, action) => {
-  switch (action.type) {
-    case INIT:
-      return action.payload;/// inicializando el array, el payload devuelve la info de la API de users
-    case ADD:
-      return [...state, action.payload];/// aca estamos 
-    case EDIT:
-      return state.map(user => {
-        if (user.id === action.payload.id) {
-          user.name = action.payload.name;
-          user.job = action.payload.job;
-        }
-        return user;
-      })
-
-    default:
-      return state;
-  }
-}
 
 const App = () => {
 
   const [users, dispatch] = useReducer(reducer, []);
-  const [jobs, setJobs] = useState([]);
+  const [jobs, jobDispatch] = useReducer(jobReducer, []);
   const [selectedUser, setSelectedUser] = useState();
   const [selectedJob, setSelectedJob] = useState();
   const [displayNewUser, setDisplayNewUser] = useState(false);
@@ -47,15 +27,6 @@ const App = () => {
 
   const headers = ["Name", "Avatar", "Job Title", "Actions"];
   const headers2 = ["Job Title", "Id", "Actions"];
-
-  const getData = async (url, setter) => {
-    try {
-      const res = await axios.get(url);
-      setter(res.data);
-    } catch (err) {
-      alert("Error getting data", err);
-    }
-  }
 
   const getData2 = async (url, dispatch, actionType) => {
     try {
@@ -67,7 +38,7 @@ const App = () => {
   }
 
   const getUsers = async () => getData2("https://5f518d325e98480016123ada.mockapi.io/api/v1/users", dispatch, INIT);
-  const getJobs = async () => getData("https://5f518d325e98480016123ada.mockapi.io/api/v1/jobs", setJobs);
+  const getJobs = async () => getData2("https://5f518d325e98480016123ada.mockapi.io/api/v1/jobs", jobDispatch, INIT);
 
   const editUser = user => {
     setSelectedUser(user);
@@ -77,6 +48,23 @@ const App = () => {
   const editJobs = (job) => {
     setSelectedJob(job);
     setDisplayJobModal(true);
+  }
+
+
+  const deleteUser = (user) => {
+    axios.delete(`https://5f518d325e98480016123ada.mockapi.io/api/v1/users/${user.id}`)
+    .then(res => {
+      dispatch({ type: ELIMINAR, payload: res.data });
+    }) .catch(err => console.warn('err')) 
+  }
+
+  const deleteJob = (job) => {
+    console.log("Ver", job.id)
+    axios.delete(`https://5f518d325e98480016123ada.mockapi.io/api/v1/jobs/${job.id}`)
+    .then(res => {
+      console.log("ver", res.data)
+      jobDispatch({ type: ELIMINAR, payload: res.data });
+    }) .catch(err => console.warn('err')) 
   }
 
   useEffect(() => getUsers(), []);
@@ -103,7 +91,7 @@ const App = () => {
       }
       {
         displayJobModal ?
-          <JobModal job={selectedJob} jobs={jobs} close={() => setDisplayJobModal(false)} Jobs={jobs} setJobs={setJobs} />
+          <JobModal job={selectedJob} close={() => setDisplayJobModal(false)} jobs={jobs} jobDispatch={jobDispatch} actionType={EDIT}/>
           :
           null
       }
@@ -113,7 +101,7 @@ const App = () => {
             users.map(user => {
               const job = jobs.find(job => job.id == user.jobId) || { name: "Not Found" };
               return (
-                <tr>
+                <tr key={user.id}>
                   <td>{user.name}</td>
                   <td><img className="avatar-img" src={user.avatar} /></td>
                   <td>{job.name}</td>
@@ -125,7 +113,15 @@ const App = () => {
                       EDIT
                        <FontAwesomeIcon icon={faEdit} style={{ marginLeft: `5px` }} />
                     </button>
+                    <button
+                      className="button-green"
+                      onClick={() => deleteUser(user) }
+                    >
+                      DELETE
+                       <FontAwesomeIcon icon={faEdit} style={{ marginLeft: `5px` }} />
+                    </button>
                   </td>
+                  
                 </tr>
               )
             })
@@ -137,7 +133,7 @@ const App = () => {
           {
             jobs.map(job => {
               return (
-                <tr>
+                <tr  key={job.id}>
                   <td>{job.name}</td>
                   <td>{job.id}</td>
                   <td>
@@ -146,6 +142,13 @@ const App = () => {
                       onClick={() => editJobs(job)}
                     >
                       EDIT
+                       <FontAwesomeIcon icon={faEdit} style={{ marginLeft: `5px` }} />
+                    </button>
+                    <button
+                      className="button-green"
+                      onClick={() => deleteJob(job)}
+                    >
+                      DELETE
                        <FontAwesomeIcon icon={faEdit} style={{ marginLeft: `5px` }} />
                     </button>
 
